@@ -1,0 +1,38 @@
+name: 更新润林数据
+
+# 触发条件：
+#   1) 定时：每个工作日约北京时间 15:30（UTC 07:30）自动跑一次
+#   2) 手动：在仓库 Actions 页点 "Run workflow" 立即跑
+on:
+  schedule:
+    - cron: "30 7 * * 1-5"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write   # 允许把新 data.json 提交回仓库
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取仓库
+        uses: actions/checkout@v4
+
+      - name: 配置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 安装依赖
+        run: pip install akshare
+
+      - name: 生成数据
+        run: python generate_data.py
+
+      - name: 提交 data.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          git diff --cached --quiet || git commit -m "auto: 更新 data.json"
+          git push
