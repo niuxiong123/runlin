@@ -1,0 +1,4 @@
+# 备份与缓存，勿提交
+data.json.bak
+__pycache__/
+*.pyc
