@@ -1,15 +1,23 @@
 name: 更新润林数据
 
-# 触发条件：
-#   1) 定时：每个工作日约北京时间 15:30（UTC 07:30）自动跑一次
-#   2) 手动：在仓库 Actions 页点 "Run workflow" 立即跑
+# ⚠️ 先读 generate_data.py 顶部说明，搞清楚“为什么刷新不实时”。
+#
+# 现状：本仓库的 data.json 由【你本机】realtime_app.html 算出，云端无法复现。
+#       generate_data.py 在云端只能“安全基线”（保持旧数据），算不出新数。
+#       因此这里【默认不再定时空跑】，改为手动触发：
+#         - 真正让网页变新：在你本机跑出新版数据后，执行 publish_data.py 推送。
+#         - 本 workflow 仅在你想“手动重跑一遍云端基线/占位”时点 Run workflow。
+#
+# 未来若要“打开网页就自动拉最新”，需把 62 基金因子模型重写为云端抓取器并接进来，
+# 届时再把下面的 schedule 取消注释即可。
+
 on:
-  schedule:
-    - cron: "30 7 * * 1-5"
-  workflow_dispatch: {}
+  # schedule:
+  #   - cron: "30 7 * * 1-5"   # 每个工作日约北京时间 15:30（UTC 07:30）
+  workflow_dispatch: {}        # 手动：Actions 页点 "Run workflow"
 
 permissions:
-  contents: write   # 允许把新 data.json 提交回仓库
+  contents: write   # 允许把 data.json 提交回仓库
 
 jobs:
   update:
@@ -23,16 +31,5 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: 安装依赖
-        run: pip install akshare
-
-      - name: 生成数据
+      - name: 运行生成器（安全基线 / 或采纳 data.source.json）
         run: python generate_data.py
-
-      - name: 提交 data.json
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data.json
-          git diff --cached --quiet || git commit -m "auto: 更新 data.json"
-          git push
